@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NarrativeForge — The Ashworth Affair</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=EB+Garamond:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#0e0c0a; --ink-2:#16120d; --panel:#1b1611; --line:#3a2f22;
+    --gas:#e3a857; --gas-soft:#c89456; --ember:#b5503a;
+    --parchment:#e8dcc2; --parchment-dim:#9c8e74; --green:#7f9c6b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'EB Garamond',Georgia,serif; color:var(--parchment);
+    background:
+      radial-gradient(1200px 700px at 75% -10%, rgba(227,168,87,.10), transparent 60%),
+      radial-gradient(900px 600px at 10% 110%, rgba(181,80,58,.10), transparent 60%),
+      var(--ink);
+    min-height:100vh; line-height:1.5; letter-spacing:.1px;
+  }
+  body::after{ /* film grain */
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:9;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  header{
+    padding:30px 40px 18px; border-bottom:1px solid var(--line);
+    display:flex; align-items:flex-end; justify-content:space-between; gap:20px;
+  }
+  .brand h1{
+    font-family:'Cormorant Garamond',serif; font-weight:600; font-size:34px;
+    letter-spacing:.5px; line-height:1;
+  }
+  .brand h1 span{color:var(--gas)}
+  .brand p{color:var(--parchment-dim); font-style:italic; font-size:15px; margin-top:4px}
+  .status{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--parchment-dim); text-align:right}
+  .status b{color:var(--green)}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--green);margin-right:5px;box-shadow:0 0 8px var(--green)}
+
+  main{display:grid; grid-template-columns:1fr 360px; gap:0; height:calc(100vh - 96px)}
+  @media (max-width:980px){ main{grid-template-columns:1fr; height:auto} }
+
+  /* ---- stage ---- */
+  .stage{display:flex; flex-direction:column; overflow:hidden; border-right:1px solid var(--line)}
+  .meta-row{
+    display:flex; gap:24px; align-items:center; padding:14px 40px;
+    border-bottom:1px solid var(--line); font-family:'IBM Plex Mono',monospace; font-size:12px;
+    color:var(--parchment-dim);
+  }
+  .tension-wrap{flex:1; display:flex; align-items:center; gap:12px}
+  .tension-bar{flex:1; height:6px; background:#241c14; border-radius:3px; overflow:hidden}
+  .tension-fill{height:100%; width:20%;
+    background:linear-gradient(90deg,var(--gas-soft),var(--ember)); transition:width .8s ease}
+  .act-badge{color:var(--gas)}
+
+  .canvas{flex:1; overflow-y:auto; padding:30px 40px 16px}
+  .canvas::-webkit-scrollbar{width:8px}
+  .canvas::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px}
+
+  .beat{margin-bottom:26px; animation:rise .6s ease both}
+  @keyframes rise{from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:none}}
+  .narr{font-style:italic; color:var(--parchment-dim); font-size:18px; max-width:62ch;
+    border-left:2px solid var(--line); padding-left:16px}
+  .line{font-size:20px; max-width:64ch}
+  .line .who{font-family:'Cormorant Garamond',serif; font-size:15px; letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--gas); display:block; margin-bottom:4px}
+  .resolution{font-size:21px; color:var(--parchment); background:rgba(227,168,87,.06);
+    border:1px solid var(--line); padding:18px 22px; border-radius:6px; max-width:66ch}
+  .solved-tag{color:var(--green); font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:1px}
+
+  /* reasoning trace toggle */
+  .trace-toggle{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--gas-soft);
+    background:none; border:1px dashed var(--line); border-radius:4px; padding:3px 8px;
+    cursor:pointer; margin-top:10px; letter-spacing:.5px}
+  .trace-toggle:hover{border-color:var(--gas); color:var(--gas)}
+  .traces{margin-top:10px; border-left:2px solid var(--gas-soft);
+    padding:8px 0 8px 14px; display:none}
+  .traces.open{display:block}
+  .trace{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--parchment-dim);
+    margin-bottom:6px}
+  .trace b{color:var(--gas-soft)}
+  .trace .ag{display:inline-block; min-width:96px; color:var(--ember)}
+
+  /* ---- composer ---- */
+  .composer{border-top:1px solid var(--line); padding:16px 40px 20px; background:var(--ink-2)}
+  .who-pick{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px}
+  .chip{font-family:'IBM Plex Mono',monospace; font-size:12px; padding:6px 12px;
+    border:1px solid var(--line); border-radius:20px; cursor:pointer; color:var(--parchment-dim);
+    background:none; transition:.2s}
+  .chip:hover{border-color:var(--gas-soft); color:var(--parchment)}
+  .chip.active{background:var(--gas); color:var(--ink); border-color:var(--gas); font-weight:500}
+  .input-row{display:flex; gap:10px}
+  .input-row input{flex:1; background:var(--ink); border:1px solid var(--line); border-radius:6px;
+    color:var(--parchment); font-family:'EB Garamond',serif; font-size:17px; padding:12px 14px}
+  .input-row input:focus{outline:none; border-color:var(--gas-soft)}
+  .btn{font-family:'Cormorant Garamond',serif; font-size:17px; letter-spacing:.5px;
+    padding:10px 22px; border-radius:6px; border:1px solid var(--gas); background:var(--gas);
+    color:var(--ink); cursor:pointer; font-weight:600}
+  .btn:hover{background:var(--gas-soft)}
+  .btn.ghost{background:none; color:var(--gas); }
+  .btn.danger{border-color:var(--ember); color:var(--ember); background:none}
+  .btn.danger:hover{background:var(--ember); color:var(--ink)}
+  .btn:disabled{opacity:.4; cursor:not-allowed}
+
+  /* ---- side panel ---- */
+  aside{overflow-y:auto; padding:22px; background:var(--panel)}
+  aside::-webkit-scrollbar{width:8px}
+  aside::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px}
+  .card{border:1px solid var(--line); border-radius:8px; padding:14px 16px; margin-bottom:16px;
+    background:rgba(0,0,0,.18)}
+  .card h3{font-family:'Cormorant Garamond',serif; font-weight:600; font-size:18px;
+    letter-spacing:.5px; margin-bottom:10px; color:var(--gas)}
+  .susp{margin-bottom:12px}
+  .susp .nm{font-size:16px}
+  .susp .rl{font-size:13px; color:var(--parchment-dim); font-style:italic; margin-bottom:5px}
+  .emos{display:flex; gap:5px; flex-wrap:wrap}
+  .emo{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--parchment-dim)}
+  .emo .meter{display:inline-block; width:30px; height:4px; background:#241c14; border-radius:2px;
+    vertical-align:middle; margin-left:3px; overflow:hidden}
+  .emo .meter i{display:block; height:100%; background:var(--gas-soft)}
+  .clue{font-size:14px; padding:7px 0; border-bottom:1px dotted var(--line); color:var(--parchment)}
+  .clue:last-child{border:0}
+  .clue .t{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--parchment-dim)}
+  .empty{color:var(--parchment-dim); font-style:italic; font-size:14px}
+  .judge-note{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--parchment-dim);
+    line-height:1.6; margin-top:6px}
+  .judge-note b{color:var(--gas-soft)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>Narrative<span>Forge</span></h1>
+    <p>The Ashworth Affair — a multi-agent narrative intelligence</p>
+  </div>
+  <div class="status" id="status"><span class="dot"></span> connecting…</div>
+</header>
+
+<main>
+  <section class="stage">
+    <div class="meta-row">
+      <div class="tension-wrap">
+        <span>TENSION</span>
+        <div class="tension-bar"><div class="tension-fill" id="tension"></div></div>
+      </div>
+      <div class="act-badge" id="act">ACT I</div>
+      <div id="turncount">TURN 0</div>
+    </div>
+    <div class="canvas" id="canvas"></div>
+    <div class="composer">
+      <div class="who-pick" id="whoPick"></div>
+      <div class="input-row">
+        <input id="msg" placeholder="Question the witness…" autocomplete="off" />
+        <button class="btn" id="send">Ask</button>
+      </div>
+      <div style="margin-top:10px; display:flex; gap:8px; justify-content:flex-end">
+        <button class="btn ghost" id="reveal" title="Judge demo: show all agent reasoning">Reasoning ▸ ON</button>
+        <button class="btn danger" id="accuse">Make Accusation</button>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card">
+      <h3>The Suspects</h3>
+      <div id="suspects"></div>
+    </div>
+    <div class="card">
+      <h3>Clue Registry</h3>
+      <div id="clues"><div class="empty">No clues uncovered yet.</div></div>
+    </div>
+    <div class="card">
+      <h3>For the Judges</h3>
+      <div class="judge-note">
+        Each turn runs five agents in order:
+        <b>Character → Consequence → Director → Narrator</b>, with a
+        <b>Memory</b> agent feeding recall. Toggle <b>Reasoning</b> to see every
+        agent's trace inline. Each character pursues a hidden goal and lies
+        accordingly. Solve it by accusing the true culprit.
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const API = location.origin.includes("8000") || location.port === "8000"
+  ? "" : (location.origin.startsWith("http") ? location.origin : "http://localhost:8000");
+let storyId = null, current = null, showTraces = true;
+
+const $ = s => document.querySelector(s);
+const canvas = $("#canvas");
+
+async function api(path, opts){
+  const r = await fetch((API||"") + path, Object.assign({headers:{"content-type":"application/json"}}, opts));
+  if(!r.ok) throw new Error((await r.json()).detail || r.statusText);
+  return r.json();
+}
+
+function tensionUI(t, act, turn){
+  $("#tension").style.width = Math.round(t*100) + "%";
+  $("#act").textContent = "ACT " + ["I","II","III"][(act||1)-1];
+  $("#turncount").textContent = "TURN " + (turn||0);
+}
+
+function tracesHTML(traces){
+  if(!traces || !traces.length) return "";
+  const rows = traces.map(t =>
+    `<div class="trace"><span class="ag">${t.agent}</span> <b>${t.step}</b> — ${t.detail}</div>`).join("");
+  return `<button class="trace-toggle">▸ agent reasoning (${traces.length} steps)</button>
+          <div class="traces ${showTraces?'open':''}">${rows}</div>`;
+}
+
+function renderScene(s, names){
+  const div = document.createElement("div");
+  div.className = "beat";
+  if(s.speaker === "narrator"){
+    const solved = current && current.solved;
+    div.innerHTML = (solved
+        ? `<div class="resolution">${s.text}<div class="solved-tag">▸ CASE SOLVED</div></div>`
+        : `<div class="narr">${s.text}</div>`) + tracesHTML(s.traces);
+  } else {
+    const who = names[s.speaker] || s.speaker;
+    div.innerHTML = `<div class="line"><span class="who">${who}</span>${s.text}</div>` + tracesHTML(s.traces);
+  }
+  canvas.appendChild(div);
+  const btn = div.querySelector(".trace-toggle");
+  if(btn) btn.onclick = () => div.querySelector(".traces").classList.toggle("open");
+  canvas.scrollTop = canvas.scrollHeight;
+}
+
+let NAMES = {};
+function renderSuspects(chars, emotions){
+  NAMES = {}; const sus = $("#suspects"), pick = $("#whoPick");
+  sus.innerHTML = ""; pick.innerHTML = "";
+  Object.values(chars).forEach(c => {
+    NAMES[c.id] = c.name;
+    const e = (emotions && emotions[c.id]) || c.emotions;
+    const emoBars = ["fear","trust","anger","confidence","loyalty"].map(k =>
+      `<span class="emo">${k.slice(0,3)}<span class="meter"><i style="width:${Math.round((e[k]||0)*100)}%"></i></span></span>`).join("");
+    sus.insertAdjacentHTML("beforeend",
+      `<div class="susp"><div class="nm">${c.name}</div><div class="rl">${c.role}</div><div class="emos">${emoBars}</div></div>`);
+    const chip = document.createElement("button");
+    chip.className = "chip"; chip.textContent = c.name.split(" ").slice(-1)[0];
+    chip.dataset.id = c.id;
+    chip.onclick = () => { document.querySelectorAll(".chip").forEach(x=>x.classList.remove("active")); chip.classList.add("active"); current_target = c.id; };
+    pick.appendChild(chip);
+  });
+  const first = pick.querySelector(".chip"); if(first){ first.classList.add("active"); current_target = first.dataset.id; }
+}
+
+let current_target = null;
+function renderClues(clues){
+  const el = $("#clues");
+  if(!clues || !clues.length){ el.innerHTML = `<div class="empty">No clues uncovered yet.</div>`; return; }
+  el.innerHTML = clues.map(c => `<div class="clue"><span class="t">TURN ${c.revealed_turn} · </span>${c.text}</div>`).join("");
+}
+
+async function start(){
+  try{
+    const h = await api("/api/health");
+    $("#status").innerHTML = `<span class="dot"></span> ${h.azure_openai.toUpperCase()} model · Foundry ${h.foundry_iq}`;
+    const story = await api("/api/stories", {method:"POST", body:JSON.stringify({scenario_id:"victorian_murder"})});
+    storyId = story.id; current = story;
+    renderSuspects(story.characters, null);
+    canvas.innerHTML = "";
+    story.scenes.forEach(s => renderScene(s, NAMES));
+    tensionUI(story.world.tension, story.world.act, story.turn);
+    renderClues(story.world.clues);
+  }catch(err){
+    $("#status").innerHTML = `<span class="dot" style="background:#b5503a"></span> backend offline — start it on :8000`;
+  }
+}
+
+async function refreshAnalytics(){
+  const a = await api(`/api/stories/${storyId}/analytics`);
+  current.solved = a.solved;
+  renderSuspects(current.characters, a.emotions);
+  renderClues(a.clues);
+  document.querySelectorAll(".chip").forEach(x=>{ if(x.dataset.id===current_target) x.classList.add("active"); });
+}
+
+async function send(){
+  const input = $("#msg"); const text = input.value.trim();
+  if(!text || !current_target) return;
+  input.value = ""; $("#send").disabled = true;
+  // echo the investigator's question
+  const q = document.createElement("div"); q.className="beat";
+  q.innerHTML = `<div class="line"><span class="who" style="color:var(--parchment-dim)">The Investigator</span>${text}</div>`;
+  canvas.appendChild(q); canvas.scrollTop = canvas.scrollHeight;
+  try{
+    const res = await api(`/api/stories/${storyId}/turn`, {method:"POST",
+      body:JSON.stringify({speak_to:current_target, message:text})});
+    res.scenes.forEach(s => renderScene(s, NAMES));
+    tensionUI(res.tension, res.act, res.turn);
+    await refreshAnalytics();
+  }catch(err){ alert(err.message); }
+  $("#send").disabled = false; input.focus();
+}
+
+async function accuse(){
+  if(!current_target) return;
+  if(!confirm(`Accuse ${NAMES[current_target]} of the murder?`)) return;
+  try{
+    const res = await api(`/api/stories/${storyId}/turn`, {method:"POST",
+      body:JSON.stringify({accuse:current_target})});
+    current.solved = res.solved;
+    res.scenes.forEach(s => renderScene(s, NAMES));
+    tensionUI(res.tension, res.act, res.turn);
+  }catch(err){ alert(err.message); }
+}
+
+$("#send").onclick = send;
+$("#msg").addEventListener("keydown", e => { if(e.key==="Enter") send(); });
+$("#accuse").onclick = accuse;
+$("#reveal").onclick = () => {
+  showTraces = !showTraces;
+  $("#reveal").textContent = "Reasoning ▸ " + (showTraces?"ON":"OFF");
+  document.querySelectorAll(".traces").forEach(t => t.classList.toggle("open", showTraces));
+};
+start();
+</script>
+</body>
+</html>
